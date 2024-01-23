@@ -1,18 +1,20 @@
 #include "WindowLogin.h"
 
-WindowLogin::WindowLogin(std::shared_ptr<boost::asio::io_context> ioContextPtr, std::shared_ptr<boost::mysql::tcp_connection> connPtr, const std::string& address, const std::string& port) :
+WindowLogin::WindowLogin(std::shared_ptr<ImVec2> screenSizePtr, std::shared_ptr<boost::asio::io_context> ioContextPtr, std::shared_ptr<boost::mysql::tcp_connection> connPtr) :
 	m_ioContextPtr(ioContextPtr),
 	m_connPtr(connPtr),
-	m_address(address),
-	m_port(port),
 	m_username(""),
 	m_password(""),
 	m_loginNotSuccesful(true)
-{}
+{
+	m_windowPos = ImVec2(screenSizePtr->x / 2.0f - constants::LOGIN_WINDOW_SIZE.x / 2.0f, screenSizePtr->y / 2.0f - constants::LOGIN_WINDOW_SIZE.y / 2.0f);
+}
 
 bool WindowLogin::display() 
 {
 	ImGui::Begin("Login");
+	ImGui::SetWindowSize(constants::LOGIN_WINDOW_SIZE);
+	ImGui::SetWindowPos(m_windowPos);
 
 	ImGui::Text("Username");
 	ImGui::InputText("##username", &m_username);
@@ -24,33 +26,26 @@ bool WindowLogin::display()
 		{
 			try
 			{
-				std::cout << m_address << m_port << m_username << m_password << '\n';
+				boost::asio::ip::tcp::resolver resolver(m_ioContextPtr->get_executor());
+				auto endpoints = resolver.resolve(constants::HOST, constants::PORT);
+				std::unique_ptr<boost::mysql::handshake_params> paramsPtr(nullptr);
 				if (m_password.empty())
 				{
-					boost::asio::ip::tcp::resolver resolver(m_ioContextPtr->get_executor());
-					auto endpoints = resolver.resolve(constants::HOST, constants::PORT);
-
-					boost::mysql::handshake_params params(
-						"root", 
-						"root",                
-						"test"  
+					paramsPtr = std::make_unique<boost::mysql::handshake_params>(
+						"root",
+						"root",
+						constants::DATABASE
 					);
-
-					m_connPtr->connect(*endpoints.begin(), params);
 				}
 				else
 				{
-					boost::asio::ip::tcp::resolver resolver(m_ioContextPtr->get_executor());
-					auto endpoints = resolver.resolve(constants::HOST, constants::PORT);
-
-					boost::mysql::handshake_params params(
+					paramsPtr = std::make_unique<boost::mysql::handshake_params>(
 						m_username,                
 						m_password,                
 						constants::DATABASE  
 					);
-
-					m_connPtr->connect(*endpoints.begin(), params);
 				}
+				m_connPtr->connect(*endpoints.begin(), *paramsPtr);
 				m_loginNotSuccesful = false;
 			}
 			catch (const boost::mysql::error_with_diagnostics& err)

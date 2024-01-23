@@ -19,7 +19,8 @@ int Interface::run()
 {
 	if (!glfwInit())
 		return -1;
-	GLFWwindow* window = glfwCreateWindow(1920, 1080, "GraphDraw", glfwGetPrimaryMonitor(), nullptr);
+	std::shared_ptr<ImVec2> screenResolution = this->resolutionGet();
+	GLFWwindow* window = glfwCreateWindow(static_cast<int>(screenResolution->x), static_cast<int>(screenResolution->y), "DBapp", NULL, nullptr);
 	glfwSetWindowCloseCallback(window, [](GLFWwindow* window) { glfwSetWindowShouldClose(window, GLFW_FALSE); });
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
@@ -31,8 +32,10 @@ int Interface::run()
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 
-	WindowLogin windowLogin{ m_ioContextPtr, m_connPtr, constants::HOST, constants::PORT };
-	WindowMain windowMain{ m_ioContextPtr, m_connPtr };
+	ImGuiIO& io = ImGui::GetIO();
+
+	WindowLogin windowLogin{ screenResolution, m_ioContextPtr, m_connPtr };
+	WindowMain windowMain{ screenResolution, m_ioContextPtr, m_connPtr };
 
 	this->prepareImGuiStyles();
 
@@ -52,12 +55,6 @@ int Interface::run()
 		else
 		{
 			windowMain.display();
-			const char* sql = "SELECT * FROM drzewo";
-			boost::mysql::results result;
-			m_connPtr->query(sql, result);
-
-			// Print the first field in the first row
-			std::cout << result.rows().at(0).at(2) << std::endl;
 		}
 
 		ImGui::Render();
@@ -77,8 +74,14 @@ void Interface::prepareImGuiStyles()
 	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.188f, 0.302f, 0.188f, 1.0f));
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.933f, 0.941f, 0.898f, 1.0f));
 	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.188f, 0.302f, 0.188f, 1.0f));
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.188f, 0.302f, 0.188f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.188f, 0.302f, 0.188f, 0.85f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.188f, 0.302f, 0.188f, 1.0f));
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.714f, 0.769f, 0.714f, 1.0f));
 	ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.714f, 0.769f, 0.714f, 1.0f));
+}
+
+std::shared_ptr<ImVec2> Interface::resolutionGet()
+{
+	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+	return std::make_shared<ImVec2>(static_cast<float>(mode->width), static_cast<float>(mode->height));
 }

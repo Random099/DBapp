@@ -27,6 +27,7 @@ public:
     int run();
 private:
     void prepareImGuiStyles();
+    std::shared_ptr<ImVec2> resolutionGet();
 
     std::shared_ptr<boost::asio::io_context> m_ioContextPtr;
     std::shared_ptr<boost::mysql::tcp_connection> m_connPtr;

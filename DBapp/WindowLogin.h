@@ -19,12 +19,11 @@ class WindowLogin
 private:
 	std::shared_ptr<boost::asio::io_context> m_ioContextPtr;
 	std::shared_ptr<boost::mysql::tcp_connection> m_connPtr;
+	ImVec2 m_windowPos;
 	bool m_loginNotSuccesful;
-	std::string m_address;
-	std::string m_port;
 	std::string m_username;
 	std::string m_password;
 public:
-	WindowLogin(std::shared_ptr<boost::asio::io_context>, std::shared_ptr<boost::mysql::tcp_connection>, const std::string&, const std::string&);
+	WindowLogin(std::shared_ptr<ImVec2>, std::shared_ptr<boost::asio::io_context>, std::shared_ptr<boost::mysql::tcp_connection>);
 	bool display();
 };
