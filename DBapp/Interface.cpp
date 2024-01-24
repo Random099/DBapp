@@ -37,7 +37,7 @@ int Interface::run()
 	WindowLogin windowLogin{ screenResolution, m_ioContextPtr, m_connPtr };
 	WindowMain windowMain{ screenResolution, m_ioContextPtr, m_connPtr };
 
-	this->prepareImGuiStyles();
+	//this->prepareImGuiStyles();
 
 	for (;;) {
 		glfwPollEvents();

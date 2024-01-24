@@ -3,7 +3,8 @@
 WindowMain::WindowMain(std::shared_ptr<ImVec2> screenSizePtr, std::shared_ptr<boost::asio::io_context> ioContextPtr, std::shared_ptr<boost::mysql::tcp_connection> connPtr) :
 	m_screenSizePtr(screenSizePtr),
 	m_ioContextPtr(ioContextPtr),
-	m_connPtr(connPtr)
+	m_connPtr(connPtr),
+	m_columnNamesMapPtr(nullptr)
 {}
 
 void WindowMain::display()
@@ -14,63 +15,46 @@ void WindowMain::display()
 	
 	ImGui::Text("Display table");
 	
+	if (mappingTables)
+	{
+		this->columnNamesMap();
+	}
 	if (ImGui::Button("Display table"))
 	{
-		const char* sql = "SELECT * FROM drzewo";
-		m_connPtr->ping();
-		m_connPtr->query(sql, m_queryResult);
+		this->columnNamesMap();
+		for (auto& [tableName, columnNames] : *m_columnNamesMapPtr)
+		{
+			this->m_tables.push_back(std::make_shared<Table>(m_connPtr, tableName, columnNames));
+		}
 		displayingTable = true;
 	}
+
 	if (displayingTable)
 	{
-		ImGui::Begin("Table");
-		ImGui::SetWindowFocus("Table");
-
-		std::cout << "COLUMNS: " << m_queryResult.rows().at(0).size() << '\n';
-
-		auto x = m_queryResult.meta()[2];
-		std::cout << "NAME: " << x.column_name().at(1) << '\n';
-		if (ImGui::BeginTable("table1", m_queryResult.rows().at(0).size()))
+		for (std::shared_ptr<Table> table : m_tables)
 		{
-			for (boost::mysql::row_view row : m_queryResult.rows())
-			{
-				ImGui::TableNextRow();
-				int columnIndex = 0;
-				for (const boost::mysql::field_view& field : row)
-				{
-					ImGui::TableSetColumnIndex(columnIndex++);
-					mapField(field);
-				}
-			}
-			ImGui::EndTable();
+			table->display();
 		}
-	
-		ImGui::End();
 	}
+
 	ImGui::End();
 }
 
-void WindowMain::mapField(const boost::mysql::field_view& field) const
+void WindowMain::columnNamesMap()
 {
-	switch (field.kind())
+	m_columnNamesMapPtr = std::make_shared<std::map<std::string, std::vector<std::string> > >();
+	boost::mysql::results result;
+	boost::mysql::results result2;
+
+	m_connPtr->query(queries::SHOW_TABLES , result);
+	for (int j = 0; j < result.rows().size(); ++j)
 	{
-	case boost::mysql::field_kind::int64:
-		ImGui::Text("%lld", field.as_int64());
-		break;
-	case boost::mysql::field_kind::uint64:
-		ImGui::Text("%llu", field.as_uint64());
-		break;
-	case boost::mysql::field_kind::string:
-		ImGui::Text("%s", bsvToString(field.as_string()).c_str());
-		break;
-	case boost::mysql::field_kind::float_:
-		ImGui::Text("%f", field.as_double());
-		break;
-	case boost::mysql::field_kind::double_:
-		ImGui::Text("%f", field.as_float());
-		break;
-	case boost::mysql::field_kind::null:
-		ImGui::Text("NULL");
-		break;
-	}	
+		std::string query2 = std::string("DESCRIBE " + helpers::bsvToString(result.rows()[0][j].as_string())).c_str();
+		m_connPtr->query(query2, result2);
+		for (int i = 0; i < result2.rows().size(); ++i)
+		{
+			(*m_columnNamesMapPtr)[result.rows()[0][j].as_string()].push_back(result2.rows()[i][0].as_string());
+		}
+	}
 }
+
