@@ -34,7 +34,7 @@ bool WindowLogin::display()
 					paramsPtr = std::make_unique<boost::mysql::handshake_params>(
 						"root",
 						"root",
-						constants::DATABASE
+						constants::DATABASE_NAME
 					);
 				}
 				else
@@ -42,7 +42,7 @@ bool WindowLogin::display()
 					paramsPtr = std::make_unique<boost::mysql::handshake_params>(
 						m_username,                
 						m_password,                
-						constants::DATABASE  
+						constants::DATABASE_NAME  
 					);
 				}
 				m_connPtr->connect(*endpoints.begin(), *paramsPtr);

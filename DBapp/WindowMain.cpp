@@ -1,43 +1,68 @@
 #include "WindowMain.h"
 
-WindowMain::WindowMain(std::shared_ptr<ImVec2> screenSizePtr, std::shared_ptr<boost::asio::io_context> ioContextPtr, std::shared_ptr<boost::mysql::tcp_connection> connPtr) :
-	m_screenSizePtr(screenSizePtr),
-	m_ioContextPtr(ioContextPtr),
-	m_connPtr(connPtr),
-	m_columnNamesMapPtr(nullptr)
+WindowMain::WindowMain(std::shared_ptr<ImVec2> screenSizePtr,
+					std::shared_ptr<boost::asio::io_context> ioContextPtr,
+					std::shared_ptr<boost::mysql::tcp_connection> connPtr) :
+	m_screenSizePtr{ screenSizePtr },
+	m_ioContextPtr{ ioContextPtr },
+	m_connPtr{ connPtr },
+	m_columnNamesMapPtr{ nullptr },
+	m_mappingTables{ true },
+	m_viewport{ ImGui::GetMainViewport() }
 {}
 
 void WindowMain::display()
 {
-	ImGui::Begin("Menu");
-	ImGui::SetWindowSize(*m_screenSizePtr);
-	ImGui::SetWindowPos(ImVec2(0.0f, 0.0f));
+	ImGui::SetNextWindowPos(m_viewport->Pos);
+	ImGui::SetNextWindowSize(m_viewport->Size);
+	if (!ImGui::Begin("##Fullscreen window", NULL, constants::MAIN_WINDOW_FLAGS))
+	{
+		ImGui::End();
+		return;
+	}
 	
 	ImGui::Text("Display table");
 	
-	if (mappingTables)
+	this->handleTables();
+	
+	ImGui::End();
+}
+
+void WindowMain::handleTables()
+{
+	if (m_mappingTables)
 	{
 		this->columnNamesMap();
 	}
+
 	if (ImGui::Button("Display table"))
 	{
 		this->columnNamesMap();
 		for (auto& [tableName, columnNames] : *m_columnNamesMapPtr)
 		{
-			this->m_tables.push_back(std::make_shared<Table>(m_connPtr, tableName, columnNames));
+				m_tables[tableName] = (std::make_shared<Table>(
+				m_connPtr,
+				std::make_shared<std::string>(tableName),
+				columnNames));
 		}
-		displayingTable = true;
 	}
 
-	if (displayingTable)
+	std::vector<std::string> tablesToRemove;
+	for (auto& [name, table] : m_tables)
 	{
-		for (std::shared_ptr<Table> table : m_tables)
+		if (*(table->displaying()))
 		{
 			table->display();
 		}
+		else
+		{
+			tablesToRemove.push_back(name);
+		}
 	}
-
-	ImGui::End();
+	for (const std::string& name : tablesToRemove)
+	{
+		m_tables.erase(name);
+	}
 }
 
 void WindowMain::columnNamesMap()
@@ -56,5 +81,6 @@ void WindowMain::columnNamesMap()
 			(*m_columnNamesMapPtr)[result.rows()[0][j].as_string()].push_back(result2.rows()[i][0].as_string());
 		}
 	}
+	m_mappingTables = false;
 }
 

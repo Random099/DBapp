@@ -11,12 +11,22 @@ namespace constants
 {
 	namespace
 	{
+		enum class SORT_ORDER 
+		{
+			desc = 1 << 1,
+			asc = 1 << 2
+		};
 		constexpr char HOST[] = "localhost";
 		constexpr char PORT[] = "3306";
-		constexpr char DATABASE[] = "test";
+		constexpr char DATABASE_NAME[] = "test";
 
 		constexpr ImVec2 LOGIN_WINDOW_SIZE = { 300, 200 };
 		constexpr ImVec2 TABLE_WINDOW_SIZE = { 800, 600 };
+		constexpr ImVec2 INPUT_MENU_SIZE = { 800, 80 };
+		constexpr ImGuiWindowFlags MAIN_WINDOW_FLAGS = ImGuiWindowFlags_NoDecoration |
+			ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoBringToFrontOnFocus;
 	}
 }
 
@@ -28,6 +38,19 @@ namespace queries
 		inline std::string showTable(const std::string& tableName)
 		{
 			return "SELECT * FROM " + tableName;
+		}
+		inline std::string showTableSort(const std::string& tableName, const std::string& columnName, constants::SORT_ORDER sortOrder)
+		{
+			switch (sortOrder)
+			{
+				case constants::SORT_ORDER::asc:
+					return "SELECT * FROM " + tableName + " ORDER BY " + columnName + " ASC";
+					break;
+				case constants::SORT_ORDER::desc:
+					return "SELECT * FROM " + tableName + " ORDER BY " + columnName + " DESC";
+					break;
+			}
+			return "";
 		}
 	}
 }
