@@ -46,6 +46,7 @@ bool WindowLogin::display()
 					);
 				}
 				m_connPtr->connect(*endpoints.begin(), *paramsPtr);
+				queries::bookDatabaseTemplateSetup(m_connPtr);
 				m_loginNotSuccesful = false;
 			}
 			catch (const boost::mysql::error_with_diagnostics& err)

@@ -174,6 +174,7 @@ void Table::displayHeaders()
 
 void Table::displayData()
 {
+	int fieldIdx = 0;
 	for (boost::mysql::row_view row : m_queryResult.rows())
 	{
 		ImGui::TableNextRow();
@@ -197,9 +198,9 @@ void Table::displayData()
 			else
 			{
 				std::string treeLabel = helpers::fieldViewToStr(field);
-				if (ImGui::TreeNode(treeLabel.c_str()))
+				if (ImGui::TreeNode((treeLabel+"##"+std::to_string(fieldIdx)).c_str()))
 				{
-					std::string label = "##" +	helpers::fieldViewToStr(field);
+					std::string label = "##" +	std::to_string(fieldIdx);
 					std::string hint = std::string(m_columnNames[columnIndex] + "(" + helpers::stringKind(m_columnTypes[m_columnNames[columnIndex]])) + ")";
 					ImGui::InputTextWithHint(label.c_str(), hint.c_str(), &(*m_toUpdate));
 					ImGui::SameLine();
@@ -213,6 +214,7 @@ void Table::displayData()
 							);
 							m_connPtr->execute(stmt.bind(helpers::toFieldView(*m_toUpdate, field.kind())), m_queryResult);
 							m_connPtr->query(queries::showTable(*m_namePtr), m_queryResult);
+							m_toUpdate->clear();
 						}
 						catch (const boost::mysql::error_with_diagnostics& err)
 						{
@@ -240,6 +242,7 @@ void Table::displayData()
 				}
 			}
 			++columnIndex;
+			++fieldIdx;
 		}
 	}
 }
