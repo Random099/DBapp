@@ -37,9 +37,9 @@ void WindowMain::handleTables()
 
 	if (ImGui::Button("Display table"))
 	{
-		this->columnNamesMap();
 		for (auto& [tableName, columnNames] : *m_columnNamesMapPtr)
 		{
+				m_mappingTables = true;
 				m_tables[tableName] = (std::make_shared<Table>(
 				m_connPtr,
 				std::make_shared<std::string>(tableName),
